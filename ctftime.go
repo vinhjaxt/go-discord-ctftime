@@ -35,9 +35,20 @@ func getCTFTime2Discord(s *discordgo.Session, m *discordgo.MessageCreate) error 
 		return errors.New("Still fetching ctf events..")
 	}
 	defer atomic.StoreInt32(&CTFTimeLock, 0)
-	bot.ChannelMessageSend(defJobArg.Channel, "Fetching ctftime events..")
 	var events []gjson.Result
 	var err error
+	channel := defJobArg.Channel
+	if m != nil {
+		channel = m.ChannelID
+	}
+	sender := s
+	if sender == nil {
+		sender = bot
+	}
+	_, err = sender.ChannelMessageSend(channel, "Fetching ctftime events..")
+	if err != nil {
+		log.Println(err)
+	}
 	retries := 0
 	maxRetries := 9
 	for {
@@ -57,14 +68,6 @@ func getCTFTime2Discord(s *discordgo.Session, m *discordgo.MessageCreate) error 
 	// events: [{"organizers": [{"id": 59759, "name": "redpwn"}], "onsite": false, "finish": "2019-08-16T16:00:00+00:00", "description": "A ctf hosted by redpwn", "weight": 0.00, "title": "RedpwnCTF 2019", "url": "https://ctf.redpwn.xyz/", "is_votable_now": false, "restrictions": "Open", "format": "Jeopardy", "start": "2019-08-12T16:00:00+00:00", "participants": 21, "ctftime_url": "https://ctftime.org/event/834/", "location": "", "live_feed": "", "public_votable": true, "duration": {"hours": 0, "days": 4}, "logo": "", "format_id": 1, "id": 834, "ctf_id": 331}]
 	if len(events) < 1 {
 		return errors.New("No ctf events")
-	}
-	sender := s
-	if sender == nil {
-		sender = bot
-	}
-	channel := defJobArg.Channel
-	if m != nil {
-		channel = m.ChannelID
 	}
 	contents := "## Upcomming CTF events\n"
 	count := 0
